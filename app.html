@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<title>Ugly Christmas Sweater Meter</title>
+	<meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height" />
+	<script src="core/jquery/jquery-2.1.0.min.js"></script>
+	<script src="core/jquery/jquery.nouislider.min.js"></script>
+	<script src="core/jquery/jquery.knob.js"></script>
+	<script src="core/jquery/insQ.min.js"></script>
+	<script src="settings.js"></script>
+	<script src="core/bridge.js"></script>
+	<script src="core/pixi.min.js"></script>
+	<script src="core/TweenMax.min.js"></script>
+	
+	<script src="core/framework.js"></script>
+	<script src="core/tf.min.js"></script>
+    <script src="core/teachablemachine-image.min.js"></script>
+    <script type="text/javascript" src="core/particle.min.js"></script>
+    <link rel="stylesheet" href="css/bootstrap.min.css" crossorigin="anonymous">
+	<link rel="stylesheet" type="text/css" href="css/framework.css">
+
+
+</head>
+
+<body class="mainBg">
+		<canvas></canvas>
+        <div class="container-fluid">
+        	<div class="row topBorder">
+        		<div class="col-12"></div>
+        	</div>
+        	<div class="row" id="snowFall">
+        		<div class="col-12">
+        			<h1 class="blink hLight" style="margin-top: 5%; font-size: 80px;">100% UGLY SWEATER</h1>
+        		</div>
+        	</div>
+
+        	<div class="row" id="endGame" style="text-align: center;">
+        		<div class="col-12">
+        			<h1 class="blink hLight" style="margin-top: 5%; font-size: 80px; width: 100%; padding-left: 10%; padding-right: 10%">Merry Christmas, Mullen!!</h1>
+        		</div>
+        	</div>
+        	<div id="stageHide">
+
+	            <div class="row title" id=>
+	                <div class="col-md-1"></div>
+	                    <div class="col-12 col-md-10">
+	                        <h1 class="hLight">Ugly  Christmas  Sweater  Meter</h1>
+	                    </div>
+	                <div class="col-md-1"></div>
+	            </div>
+	            <div class="row camCont">
+	                <div class="col-md-2"></div>
+	                    <div class="col-12 col-md-4" id="webcam-container"></div>
+	                    <div class="col-12 col-md-4 meter">
+	                    	<h1 class="hLight" id="uglyMeter"></h1>
+	                    	<h2 class="hLight">ugly sweaters</h2>
+	                    	<h2 class="hLight">left to turn on Christmas lights!!</h2>
+	                    </div>
+	                <div class="col-md-2"></div>
+	            </div>
+
+	            <div class="row" id="startBtn">
+	                <div class="col-2 col-md-4"></div>
+	                    <div class="col-8 col-md-4">
+	                        <button class="btn btn-lg btn-block " type="button" onclick="init()">Start</button>
+	                    </div>
+	                <div class="col-2 col-md-4"></div>
+	            </div>
+
+	            <div class="row">
+	                <div class="col-md-2"></div>
+	                    <div class="col-12 col-md-8" >
+	                        <progress id="barXmas" max="100" value=""></progress>
+	                    </div>
+	                <div class="col-md-2"></div>
+	            </div>
+	            <div class="row">
+	            	<div class="col-md-4"></div>
+	            		<div class="col-12 col-md-4">
+	            			<h1 class="hLight" id="xmasMonitor"></h1>
+	            		</div>
+	            	<div class="col-md-4"></div>
+	            </div>
+	            <div class="row">
+	            	<div class="col-md-4"></div>
+	            		<div class="col-12 col-md-4">
+	            			<button class="ard involt-cta fn-Finvolt">Fire Away!!</button>
+	            		</div>
+	            	<div class="col-md-4"></div>
+	            </div>
+	            <div class="row" style="display: none;">
+	                <div class="col-md-4"></div>
+	                    <div class="col-12 col-md-4" style="color: white; text-align: center" id="label-container" style="display: block;"></div>
+	                <div class="col-md-4"></div>
+	            </div>
+	        
+	        </div>
+
+        	<div class="row bottomBorder">
+        		<div class="col-12"></div>
+        	</div>
+        </div>
+        
+
+
+<script type="text/javascript">
+    //Spark Photon API here
+    var uglyTotal = 0;
+    var uglyFinal = 20;
+
+    var deviceID    = "3c002f000a47353235303037";
+    var accessToken = "b0411c901db00e00b4f1510b8ce0bcbe6289f290";
+    var func = "triggerSanta";
+    //Percent monitor
+    let labelTxt = document.getElementById("labelTxt");
+    let uglyMeter =document.getElementById("uglyMeter");
+    let xmasMonitor = document.getElementById("xmasMonitor");
+    let startBtn = document.getElementById("startBtn");
+    let barXmas = document.getElementById("barXmas");
+    let stageHide = document.getElementById("stageHide");
+    let snowFall = document.getElementById("snowFall");
+    let endGame = document.getElementById("endGame");
+    //let oneUp = document.getElementById("oneUp");
+    barXmas.style.display = "none";
+    snowFall.style.display = "none";
+    endGame.style.display = "none";
+    //stageHide.style.display = "none";
+    // More TM API functions here:
+    // https://github.com/googlecreativelab/teachablemachine-community/tree/master/libraries/image
+    // the link to your model provided by Teachable Machine export panel
+    //Test model
+    const URL = "https://teachablemachine.withgoogle.com/models/GxQO6lk_/";
+    //Xmas sweater model
+    //const URL = "https://teachablemachine.withgoogle.com/models/y1bfY9ib/"
+    let model, webcam, labelContainer, maxPredictions;
+    let santaSwitch = false;
+    // Load the image model and setup the webcam
+
+    async function init() {
+    	
+        startBtn.style.display = "none";
+        barXmas.style.display = "block";
+        // labelTxt.style.display = "block"
+        const modelURL = "core/model.json";
+        const metadataURL = "core/metadata.json";
+        // load the model and metadata
+        // Refer to tmImage.loadFromFiles() in the API to support files from a file picker
+        // or files from your local hard drive
+        // Note: the pose library adds "tmImage" object to your window (window.tmImage)
+        model = await tmImage.load(modelURL, metadataURL);
+        maxPredictions = model.getTotalClasses();
+        // Convenience function to setup a webcam
+        const flip = true; // whether to flip the webcam
+        webcam = new tmImage.Webcam(400, 400, flip); // width, height, flip
+        await webcam.setup(); // request access to the webcam
+        await webcam.play();
+        window.requestAnimationFrame(loop);
+
+        // append elements to the DOM
+        document.getElementById("webcam-container").appendChild(webcam.canvas);
+        labelContainer = document.getElementById("label-container");
+        for (let i = 0; i < maxPredictions; i++) { // and class labels
+            labelContainer.appendChild(document.createElement("div"));
+        }
+
+
+	    }
+    async function loop() {
+        webcam.update(); // update the webcam frame
+        await predict();
+        window.requestAnimationFrame(loop);
+    }
+    //chill function
+    async function sleep(ms) {
+    	console.log("sleeping...")
+        return new Promise(resolve => 
+            setTimeout(resolve, ms)
+        );
+
+    }        
+    // run the webcam image through the image model
+    async function predict() {
+    	stageHide.style.display = "block";
+    	snowFall.style.display = "none";
+        // predict can take in an image, video or canvas html element
+        const prediction = await model.predict(webcam.canvas);
+        //console.log(prediction)
+        let xmasNum = prediction[0].probability;
+        let xmasPer = Math.round(xmasNum*100);
+        //console.log(goneFace*100);
+        xmasMonitor.innerHTML = xmasPer + "% UGLY";
+        uglyMeter.innerHTML = uglyFinal + "  ";
+
+        barXmas.value = xmasPer;
+
+        if(xmasPer === 100){
+        	++uglyTotal;
+			--uglyFinal;
+        	//init();
+        	await setHoHo();
+        	if(uglyTotal === 20){
+        		endGame.style.display = "block";
+        		stageHide.style.display = "none";
+        		await sleep(888000);
+        	} else {
+		    	stageHide.style.display = "none";
+		    	snowFall.style.display = "block";
+		    	initSnow(loader);
+		        await sleep(8000);
+		    }
+        }
+
+        for (let i = 0; i < maxPredictions; i++) {
+                const classPrediction =
+                    prediction[i].className + ": " + prediction[i].probability.toFixed(2)*100;
+                labelContainer.childNodes[i].innerHTML = classPrediction;
+        }
+    }
+
+    async function setHoHo() {
+        console.log(uglyTotal)
+
+        involt.sendFunction("Finvolt");
+        var requestURL = "https://api.particle.io/v1/devices/3c003c000947363335343832/funcKey/?access_token=b0411c901db00e00b4f1510b8ce0bcbe6289f290&args=hoho";
+
+        if(uglyTotal === 20){
+	       	$.post(requestURL, function(){
+	            console.log("Game Over!!");
+	        });
+        }
+    }
+    //
+
+    //Cancel projection on key press
+    document.addEventListener("keypress", function(event) {
+    	if (event.keyCode == 13) {
+        	stageHide.style.visibility = "hidden";
+        	endGame.style.display = "block";
+        	//snowFall.style.display = "none";
+        	sleep(88000);
+        	initSnow(loader);
+    	}
+	})
+
+    //test button
+	$("button").click(function() {		
+		console.log("ho ho" + uglyTotal)
+		//$(this).sendFn("involt");
+		involt.sendFunction("Finvolt");
+	});
+
+</script>
+<script src="core/snow.js"></script>
+</body>
+
+</html>
